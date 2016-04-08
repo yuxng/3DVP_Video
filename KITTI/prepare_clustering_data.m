@@ -15,6 +15,18 @@ object = load(filename);
 cad = object.(cls);
 index = cad.grid == 1;
 
+% load pedestrian cad model
+filename = '../Geometry/pedestrian.mat';
+object = load(filename);
+cad_pedestrian = object.pedestrian;
+index_pedestrian = cad_pedestrian.grid == 1;
+
+% load cyclist cad model
+filename = '../Geometry/cyclist.mat';
+object = load(filename);
+cad_cyclist = object.cyclist;
+index_cyclist = cad_cyclist.grid == 1;
+
 % load original model
 filename = sprintf('../Geometry/%s.mat', cls);
 object = load(filename);
@@ -100,9 +112,22 @@ for k = 1:numel(ids)
                 truncation(count) = object.truncation;
                 occlusion(count) = object.occlusion;
                 pattern{count} = object.pattern;
-                grid(:,count) = uint8(object.grid(index));
-                index_cad = cads(object.cad_index).grid == 1;
-                grid_origin{count} = uint8(object.grid_origin(index_cad));
+                
+                if strcmp(object.type, 'Car') || strcmp(object.type, 'Van')
+                    grid{count} = uint8(object.grid(index));
+                elseif strcmp(object.type, 'Pedestrian')
+                    grid{count} = uint8(object.grid(index_pedestrian));
+                else
+                    grid{count} = uint8(object.grid(index_cyclist));
+                end
+                    
+                if strcmp(object.type, 'Car') || strcmp(object.type, 'Van')
+                    index_cad = cads(object.cad_index).grid == 1;
+                    grid_origin{count} = uint8(object.grid_origin(index_cad));
+                else
+                    grid_origin{count} = grid{count};
+                end
+                    
                 % transform to velodyne space
                 X = [object.t'; 1];
                 X = Pv2c\X;
