@@ -52,7 +52,7 @@ for k = 1:num_seqs
     tracklets = readLabels(label_dir, seq_idx);
 
     % main loop
-    parfor img_idx = 0:nimages-1
+    parfor img_idx = 0:nimages-1        
       record = [];
       record.folder = data_set;
       record.seq_name = seq_name;
@@ -108,7 +108,7 @@ for k = 1:num_seqs
             x2d = projectToImage(x3d, P);    
             x2d = x2d';
 
-            flag = min(x2d(:,1)) < 0 & max(x2d(:,1)) > w;
+            flag = max(x2d(:,1)) - min(x2d(:,1)) > w;
             if flag == 1
                 continue;
             end
