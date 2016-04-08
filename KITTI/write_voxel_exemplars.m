@@ -1,9 +1,10 @@
 function write_voxel_exemplars
 
-is_train = 0;
+is_train = 1;
+opt = globals();
 
 % load ids
-object = load('kitti_ids_new.mat');
+object = load('kitti_ids.mat');
 if is_train
     ids = object.ids_train;
     outdir = 'Voxel_exemplars';
@@ -14,88 +15,82 @@ end
 
 % load data
 if is_train
-    object_car = load('data.mat');
-    object_pedestrian = load('data_pedestrian.mat');
-    object_cyclist = load('data_cyclist.mat');
+    object = load('data_train.mat');
 else
-    object_car = load('data_kitti.mat');
-    object_pedestrian = load('data_kitti_pedestrian.mat');
-    object_cyclist = load('data_kitti_cyclist.mat');
+    object = load('data_trainval.mat');
 end
-
-cls = {'Car', 'Pedestrian', 'Cyclist'};
-num_cls = numel(cls);
-data = cell(1, num_cls);
-data{1} = object_car.data;
-data{2} = object_pedestrian.data;
-data{3} = object_cyclist.data;
-idx = cell(1, num_cls);
-idx{1} = data{1}.idx_ap;
-idx{2} = data{2}.idx_pose;
-idx{3} = data{3}.idx_pose;
+data = object.data;
+idx = data.idx;
 
 % cluster centers
-centers = cell(1, num_cls);
-for i = 1:num_cls
-    centers{i} = unique(idx{i});
-    centers{i}(centers{i} == -1) = [];
-    N = numel(centers{i});
-    fprintf('%d clusters for %s\n', N, cls{i});
-end
+centers = unique(idx);
+centers(centers == -1) = [];
+N = numel(centers);
+fprintf('%d clusters\n', N);
 
 % write the mapping from cluster center to azimuth and alpha
 filename = sprintf('%s/mapping.txt', outdir);
 fid = fopen(filename, 'w');
-count = 0;
-for k = 1:num_cls
-    N = numel(centers{k});
-    for i = 1:N
-        azimuth = data{k}.azimuth(centers{k}(i));
-        alpha = azimuth + 90;
-        if alpha >= 360
-            alpha = alpha - 360;
-        end
-        alpha = alpha*pi/180;
-        if alpha > pi
-            alpha = alpha - 2*pi;
-        end
-        fprintf(fid, '%d %s %f %f\n', i + count, cls{k}, azimuth, alpha);
+for i = 1:N
+    azimuth = data.azimuth(centers(i));
+    type = data.type{centers(i)};
+    if strcmp(type, 'Van')
+        type = 'Car';
+    end    
+    alpha = azimuth + 90;
+    if alpha >= 360
+        alpha = alpha - 360;
     end
-    count = count + N;
+    alpha = alpha*pi/180;
+    if alpha > pi
+        alpha = alpha - 2*pi;
+    end
+    fprintf(fid, '%d %s %f %f\n', i, type, azimuth, alpha);
 end
 fclose(fid);
 
-% for each image
+% for each sequence
 for i = 1:numel(ids)
-    id = ids(i);
-    filename = sprintf('%s/%06d.txt', outdir, id);
-    fid = fopen(filename, 'w');
+    seq_idx = ids(i);
+    seq_name = opt.kitti_train_seqs{seq_idx + 1};
+    nimages = opt.kitti_train_nums(seq_idx + 1);
     
-    count = 0;
-    count_object = 0;
-    for k = 1:num_cls
+    if exist(fullfile(outdir, seq_name), 'dir') == 0
+        mkdir(fullfile(outdir, seq_name));
+    end
+    
+    % for each image
+    for j = 1:nimages
+        img_idx = j - 1;
+        filename = sprintf('%s/%s/%06d.txt', outdir, seq_name, img_idx);
+        fid = fopen(filename, 'w');
+
         % write object info to file
-        index = find(data{k}.id == id);
-        for j = 1:numel(index)
-            ind = index(j);
+        index = find(data.sid == seq_idx & data.id == img_idx);
+        for k = 1:numel(index)
+            ind = index(k);
             % cluster id
-            cluster_idx = idx{k}(ind);
+            cluster_idx = idx(ind);
             if cluster_idx ~= -1
-                cluster_idx = find(centers{k} == cluster_idx) + count;
+                cluster_idx = find(centers == cluster_idx);
             end
 
             % flip
-            is_flip = data{k}.is_flip(ind);
+            is_flip = data.is_flip(ind);
 
             % bounding box
-            bbox = data{k}.bbox(:,ind);
+            bbox = data.bbox(:,ind);
 
-            fprintf(fid, '%s %d %d %.2f %.2f %.2f %.2f\n', cls{k}, cluster_idx, is_flip, bbox(1), bbox(2), bbox(3), bbox(4));
+            % type
+            type = data.type{ind};
+            if strcmp(type, 'Van')
+                type = 'Car';
+            end
+
+            fprintf(fid, '%s %d %d %.2f %.2f %.2f %.2f\n', type, cluster_idx, is_flip, bbox(1), bbox(2), bbox(3), bbox(4));
         end
-        count = count + numel(centers{k});
-        count_object = count_object + numel(index);
+
+        fclose(fid);
+        fprintf('%s: %d objects written\n', filename, numel(index));
     end
-    
-    fclose(fid);
-    fprintf('%s: %d objects written\n', filename, count_object);
 end
