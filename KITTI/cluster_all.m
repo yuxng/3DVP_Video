@@ -1,7 +1,7 @@
 function cluster_all
 
 % load data
-filename = 'data_train.mat';
+filename = 'data_trainval.mat';
 disp(filename);
 object = load(filename);
 data = object.data;

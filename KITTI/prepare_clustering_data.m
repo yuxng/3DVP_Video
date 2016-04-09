@@ -1,6 +1,6 @@
 function data = prepare_clustering_data
 
-is_train = 1;
+is_train = 0;
 
 % KITTI path
 opt = globals();
