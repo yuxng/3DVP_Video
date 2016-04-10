@@ -1,6 +1,6 @@
 function write_voxel_exemplars
 
-is_train = 1;
+is_train = 0;
 opt = globals();
 
 % load ids

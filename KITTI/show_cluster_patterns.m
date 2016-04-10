@@ -11,7 +11,7 @@ cam = 2; % 2 = left color camera
 image_dir = fullfile(root_dir, [data_set '/image_' sprintf('%02d', cam)]);
 
 % load data
-object = load('data_train.mat');
+object = load('data_trainval.mat');
 data = object.data;
 idx = data.idx;
 
