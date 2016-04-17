@@ -377,7 +377,6 @@ for k = 1:num_seqs
       disp(filename);
       parsave(filename, record);
     end
-
 end
 
 matlabpool close;

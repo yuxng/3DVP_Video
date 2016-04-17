@@ -1,12 +1,19 @@
-function [recall_all, precision_all, aos_all] = compute_recall_precision_aos
+function compute_recall_precision_aos
 
-cls = 'car';
+% cls = 'car';
+% cls = 'pedestrian';
+cls = 'cyclist';
+disp(cls);
 
 % evaluation parameter
 MIN_HEIGHT = [40, 25, 25];     % minimum height for evaluated groundtruth/detections
 MAX_OCCLUSION = [0, 1, 2];     % maximum occlusion level of the groundtruth used for evaluation
 MAX_TRUNCATION = [0.15, 0.3, 0.5]; % maximum truncation level of the groundtruth used for evaluation
-MIN_OVERLAP = 0.7;
+if strcmp(cls, 'car')
+    MIN_OVERLAP = 0.7;
+else
+    MIN_OVERLAP = 0.5;
+end
 N_SAMPLE_PTS = 41;
 
 % KITTI path
@@ -57,6 +64,7 @@ precision_all = cell(1, 3);
 aos_all = cell(1, 3);
 
 for difficulty = 1:3
+    fprintf('difficulty %d\n', difficulty);
     % for each image
     scores_all = [];
     n_gt_all = 0;
@@ -111,7 +119,7 @@ for difficulty = 1:3
             [detection.alpha]', [detection.score]'];
         
         % only select cars
-        index = strcmp('Car', det_cls);
+        index = strcmpi(cls, det_cls);
         det = det(index, :);        
         
         det = truncate_detections(det);
@@ -153,6 +161,7 @@ for difficulty = 1:3
         dontcare_gt_all{i} = dontcare_gt;
     end
     % get thresholds
+    fprintf('%d gts\n', n_gt_all);
     thresholds = get_thresholds(scores_all, n_gt_all, N_SAMPLE_PTS);
     
     nt = numel(thresholds);
@@ -166,7 +175,6 @@ for difficulty = 1:3
     
     % for each image
     for i = 1:N
-        disp(i);
         gt = groundtruths{i};
         num = numel(gt);
         ignored_gt = ignored_gt_all{i};
@@ -178,7 +186,7 @@ for difficulty = 1:3
             [detection.alpha]', [detection.score]'];
         
         % only select cars
-        index = strcmp('Car', det_cls);
+        index = strcmpi(cls, det_cls);
         det = det(index, :);    
         
         det = truncate_detections(det);    
