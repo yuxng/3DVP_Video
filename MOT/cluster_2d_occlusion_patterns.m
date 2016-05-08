@@ -37,29 +37,24 @@ for i = 1:numel(index)
 end
 fprintf('done\n');
 
-% AP clustering
-fprintf('computing similarity scores...\n');
-similarity = compute_similarity_2d(X);
-fprintf('done\n');
-
-% clustering
-fprintf('Start AP clustering\n');
-idx_ap = apclusterK(similarity, K);
-fprintf('Number of clusters: %d\n', length(unique(idx_ap)));
+% kmeans clustering
+fprintf('2d kmeans %d\n', K);
+opts = struct('maxiters', 1000, 'mindelta', eps, 'verbose', 1);
+[center, sse] = vgg_kmeans(X, K, opts);
+[idx_kmeans, d] = vgg_nearest_neighbour(X, center);
 
 % construct idx
 num = numel(data.imgname);
 idx = zeros(num, 1);
 idx(flag == 0) = -1;
 index_all = find(flag == 1);
-
-cids = unique(idx_ap);
-assert(K == numel(cids));
 for i = 1:K
-    index = idx_ap == cids(i);
-    cid = index_all(cids(i));
+    index = find(idx_kmeans == i);
+    [~, ind] = min(d(index));
+    cid = index_all(index(ind));
     idx(index_all(index)) = cid;
 end
+
 
 function modelDs = compute_model_size(bbox)
 
