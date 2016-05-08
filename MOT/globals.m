@@ -35,6 +35,14 @@ opt.overlap_occ = 0.7;
 % add selective search path
 % addpath(genpath('../3rd_party/SelectiveSearchCodeIJCV'));
 
-opt.path_slm = '/capri5/Projects/SLM';
+% path for SLM
+slm_paths = {'/capri5/Projects/SLM', ...
+    '/scail/scratch/u/yuxiang/SLM'};
+for i = 1:numel(slm_paths)
+    if exist(slm_paths{i}, 'dir')
+        opt.path_slm = slm_paths{i};
+        break;
+    end
+end
 opt.path_slm_acf = [opt.path_slm '/ACF'];
 addpath(opt.path_slm_acf);
